@@ -1,0 +1,614 @@
+AST Rules
+Group Number: 	25
+Group Members:	Aayush Atul Verma 		2017A7PS0061P
+		Aditya Ramaswamy 		2017A7PS0130P
+		Jithin Kallukalam Sojan		2017A7PS0163P
+
+
+NOTE: For each node parseNode in the parse tree, parseNode.child is the synthesized attribute and parseNode.inh is the inherited attribute.
+	  In each parseNode, the prooduction that the node expands into is stored.
+	  add(node) is an abstract function that adds the given node at the end of the linked list that the function is acting upon.
+	  As mentioned in class, the values being passed around for creation of AST are the nodes of the parse tree itself.
+	  **All nodes that are not used in the creation of the AST will be freed.
+
+
+<program>-> <moduleDeclarations> <otherModules> <driverModule> <otherModules>
+	{
+		<program>.child = <moduleDeclarations>;
+		<program>.child.add(<otherModules>.child);
+		<program>.child.add(<driverModule>);
+		<program>.child.add(<otherModules1>.child);
+	}
+
+<moduleDeclarations>-> <moduleDeclaration> <moduleDeclarations>
+	{
+		<moduleDeclarations>.child = <moduleDeclaration>.child;
+		<moduleDeclarations>.child.add(<moduleDeclarations1>.child);
+	}
+
+<moduleDeclarations>->~
+	{
+		<moduleDeclarations>.child = NULL;
+	}
+
+<moduleDeclaration>-> DECLARE MODULE ID SEMICOL
+	{
+		<moduleDeclaration>.child = ID;
+
+	}
+
+<otherModules>-> <module> <otherModules>
+	{
+		<otherModules>.child = <module>;
+		<otherModules>.child.add(<otherModules1>.child);
+	}
+
+<otherModules>->~
+	{
+		<otherModules>.child = NULL;
+	}
+
+<driverModule>-> DRIVERDEF DRIVER PROGRAM DRIVERENDDEF <moduleDef>
+	{
+		<driverModule>.child = <moduleDef>.child;
+	}
+
+<module>-> DEF MODULE ID ENDDEF TAKES INPUT SQBO <input_plist> SQBC SEMICOL <ret> <moduleDef>
+	{
+		<module>.child = <input_plist>;
+		<module>.child.add(<ret>.child);
+		<module>.child.add(<moduleDef>.child);	
+	}
+
+<ret>-> RETURNS SQBO <output_plist> SQBC SEMICOL
+	{
+		<ret>.child = <output_plist>;
+	}
+
+<ret>->~
+	{
+		<ret>.child = NULL;
+	}
+
+<input_plist>-> ID COLON <dataType> <N1>
+	{
+		<input_plist>.child = ID;
+		<input_plist>.child.add(<dataType>.child);
+		<input_plist>.child.add(<N1>.child);
+	}
+
+<N1>-> COMMA ID COLON <dataType> <N1>
+	{
+		<N1>.child = ID;
+		<N1>.child.add(<dataType>.child);
+		<N1>.child.add(<N11>.child);
+		//<N11> represents <N1> in the right hand side of the prooduction.
+	}
+
+<N1>->~
+	{
+		<N1>.child = NULL;
+	}
+
+<output_plist>-> ID COLON <type> <N2>
+	{
+		<output_plist>.child = ID;
+		<output_plist>.child.add(<type>.child);
+		<output_plist>.child.add(<N2>.child);
+	}
+
+<N2>-> COMMA ID COLON <type> <N2>
+	{
+		<N2>.child = ID;
+		<N2>.child.add(<type>.child);
+		<N2>.child.add(<N21>.child);
+	}
+
+<N2>->~
+	{
+		<N2>.child = NULL;
+	}
+
+<dataType>-> INTEGER
+	{
+		<dataType>.child = INTEGER;
+	}
+
+<dataType>-> REAL
+	{
+		<dataType>.child = REAL;
+	}
+
+<dataType>-> BOOLEAN
+	{
+		<dataType>.child = BOOLEAN;
+	}
+
+<dataType>-> ARRAY SQBO <range_arrays> SQBC OF <type>
+	{
+		<type>.inh = <range_arrays>.child;
+		<dataType>.child = ARRAY;
+		<dataType>.child.child.add(<type>.child);
+		//ARRAY is not sent to <range_arrays>.inh as that would not follow the definition of an inherited attribute.
+		//Hence <dataType>.child.child is accessed
+	}
+
+<range_arrays>-> <index> RANGEOP <index>
+	{
+		<range_arrays>.child = <index>;
+		<range_arrays>.child.add(<index1>);
+	}
+	
+<type>-> INTEGER
+	{
+		<type>.child = <type>.inh;
+		<type>.child.add(INTEGER);
+	}
+
+<type>-> REAL
+	{
+		<type>.child = <type>.inh;
+		<type>.child.add(REAL);
+	}
+
+<type>-> BOOLEAN
+	{
+		<type>.child = <type>.inh;
+		<type>.child.add(BOOLEAN);
+	}
+
+<moduleDef>-> START <statements> END
+	{
+		<moduleDef>.child = <statements>;
+	}
+
+<statements>-> <statement> <statements>
+	{
+		<statements>.child = <statement>.child;
+		<statements>.child.add(<statements1>.child);
+	}
+
+<statements>-> ~
+	{
+		<statements>.child = NULL;
+	}
+
+<statement>-> <ioStmt>
+	{
+		<statement>.child = <ioStmt>.child;
+	}
+
+<statement>-> <simpleStmt>
+	{
+		<statement>.child = <simpleStmt>.child;	
+	}
+
+<statement>-> <declareStmt>
+	{
+		<statement>.child = <declcareStmt>;
+	}
+
+<statement>-> <conditionalStmt>
+	{
+		<statement>.child = <conditionalStmt>;
+	}
+
+<statement>-> <iterativeStmt>
+	{
+		<statement>.child = <iterativeStmt>.child;
+	}
+
+<ioStmt>-> GET_VALUE BO ID BC SEMICOL
+	{
+		<ioStmt>.child = GET_VALUE;
+		<ioStmt>.child.child.add(ID);
+	}
+
+<ioStmt>-> PRINT BO <var> BC SEMICOL
+	{
+		<ioStmt>.child = PRINT;
+		<ioStmt>.child.child.add(<var>.child);
+	}
+
+<boolConstt>-> TRUE
+	{
+		<boolConstt>.child = TRUE;
+	}
+
+<boolConstt>-> FALSE
+	{
+		<boolConstt>.child = FALSE;
+	}
+
+<var_id_num>-> ID <whichId>
+	{
+		<var_id_num>.child = ID;
+		<var_id_num>.child.child.add(<whichId>.child);
+	}
+
+<var_id_num>-> NUM
+	{
+		<var_id_num>.child = NUM;
+	}
+
+<var_id_num>-> RNUM
+	{
+		<var_id_num>.child = RNUM;
+	}
+
+<var>-> <var_id_num>
+	{
+		<var>.child = <var_id_num>.child;
+	}
+
+<var>-> <boolConstt>
+	{
+		<var>.child = <boolConstt>.child;
+	}
+
+<whichId>-> SQBO <index> SQBC
+	{
+		<whichId>.child = <index>.child;
+	}
+
+<whichId>-> ~
+	{
+		<whichId>.child = NULL;	
+	}
+
+<simpleStmt>-> <assignmentStmt>
+	{
+		<simpleStmt>.child = <assignmentStmt>;
+		//Instead of assignop, the assignmentStmt tag is used as the node to indicate that the statement is an assignment statement.
+		//This is easier to implement, but still provides the exact same uniqueness.
+	}
+
+<simpleStmt>-> <moduleReuseStmt>
+	{
+		<simpleStmt>.child = <moduleReuseStmt>;
+	}
+
+<assignmentStmt>-> ID <whichStmt>
+	{
+		<assignmentStmt>.child = ID;
+		<assignmentStmt>.child.add(<whichStmt>.child);
+		<assignmentStmt>.child.child.add(<whichStmt>.child->next);
+		<assignmentStmt>.child->next->next = NULL;
+	}
+
+<whichStmt>-> <lvalueIDStmt>
+	{
+		<whichStmt>.child = <lvalueIDStmt>.child;
+	}
+
+<whichStmt>-> <lvalueARRStmt>
+	{
+		<whichStmt>.child> = <lvalueARRStmt>.child;
+	}
+
+<lvalueIDStmt>-> ASSIGNOP <expression> SEMICOL
+	{
+		<lvalueIDStmt>.child = <expression>.child;
+		<lvalueIDStmt>.child.add(NULL);
+		//Adding NULL is necessary because we need to send the value of the index if exists to the ID node.
+	}
+
+<lvalueARRStmt>-> SQBO <index> SQBC ASSIGNOP <expression> SEMICOL
+	{
+		<lvalueARRStmt>.child = <expression>.child;
+		<lvalueARRStmt>.child.add(<index>.child);
+		//Adding NULL is necessary because we need to send the value of the index if exists to the ID node.
+		//Note that <expression>.child in the AST has only one node at the first level, and thus this implementation is possible.
+	}
+
+<index>-> NUM
+	{
+		<index>.child = NUM;
+	}
+
+<index>-> ID
+	{
+		<index>.child = ID;
+	}
+
+<moduleReuseStmt>-> <optional> USE MODULE ID WITH PARAMETERS <idList> SEMICOL
+	{
+		<moduleReuseStmt>.child = <optional>.child;
+		<moduleReuseStmt>.child.add(ID);
+		<moduleReuseStmt>.child.add(<idList>);
+		//R <idList> node to help keep uniformity in the tree in the way parameter/argument lists are represented.
+	}
+
+<optional>-> SQBO <idList> SQBC ASSIGNOP
+	{
+		<optional>.child = <idList>;
+	}
+
+<optional>-> ~
+	{
+		<optional>.child = NULL;
+	}
+
+<idList>-> ID <N3>
+	{
+		<idList>.child = ID;
+		<idList>.child.add(N3.child);
+	}
+
+<N3>-> COMMA ID <N3>
+	{
+		<N3>.child = ID;
+		<N3>.child.add(<N31>.child);
+	}
+
+<N3>-> ~
+	{
+		<N3>.child = NULL;
+	}
+
+<expression>-> <arithmeticOrBooleanExpr>
+	{
+		<expression>.child = <arithmeticOrBooleanExpr>.child;
+	}
+
+<expression>-> <U>
+	{
+		<expression>.child = <U>;
+	}
+
+<U>-> <unary_op> <new_NT>
+	{
+		<U>.child = <unary_op>.child;
+		<U>.child.add(<new_NT>.child);
+	}
+
+<new_NT>-> <var_id_num>
+	{
+		<new_NT>.child = <var_id_num>.child;
+	}
+
+<new_NT>-> BO <arithmeticExpr> BC
+	{
+		<new_NT>.child = <arithmeticExpr>.child;
+	}
+
+<unary_op>-> PLUS
+	{
+		<unary_op>.child = PLUS;
+	}
+
+<unary_op>-> MINUS
+	{
+		<unary_op>.child = MINUS;
+	}
+
+<arithmeticOrBooleanExpr>-> <AnyTerm> <N7>
+	{
+		<N7>.inh = <AnyTerm>.child;
+		<arithmeticOrBooleanExpr>.child = <N7>.child;
+	}
+
+<N7>-> <logicalOp> <AnyTerm> <N7>
+	{
+		<N71>.inh = <logicalOp>.child;
+		<N71>.inh.child = <N7>.inh;
+		<N71>.inh.child.add(<AnyTerm>.child);
+		<N7>.child = <N71>.child;
+	}
+
+<N7>-> ~
+	{
+		<N7>.child = <N7>.inh;
+	}
+
+<AnyTerm>-> <arithmeticExpr> <N8>
+	{
+		<N8>.inh = <arithmeticExpr>.child;
+		<AnyTerm>.child = <N8>.child;
+	}
+
+<AnyTerm>-> <boolConstt>
+	{
+		<AnyTerm>.child = <boolConstt>.child;
+	}
+
+<N8>-> <relationalOp> <arithmeticExpr>
+	{
+		<arithmeticExpr>.inh = <relationalOp>.child;
+		<arithmeticExpr>.inh.child = <N8>.inh;
+		<arithmeticExpr>.inh.child.add(<arithmeticExpr>.child);
+		<N8>.child = <arithmeticExpr>.inh;
+	}
+
+<N8>-> ~
+	{
+		<N8>.child = <N8>.inh;
+	}
+
+<arithmeticExpr>-> <term> <N4>
+	{
+		<N4>.inh = <term>.child;
+		<arithmeticExpr>.child = <N4>.child;
+	}
+
+<N4>-> <op1> <term> <N4>
+	{
+		<N41>.inh = <op1>.child;
+		<N41>.inh.child = <N4>.inh;
+		<N41>.inh.child.add(<term>.child);
+		<N4>.child = <N41>.child;
+	}
+
+<N4>-> ~
+	{
+		<N4>.child = <N4>.inh;
+	}
+
+<term>-> <factor> <N5>
+	{
+		<N5>.inh = <factor>.child;
+		<term>.child = <N5>.child;
+	}
+
+<N5>-> <op2> <factor> <N5>
+	{
+		<N51>.inh = <op2>.child;
+		<N51>.inh.child = <N5>.inh;
+		<N51>.inh.child.add(<factor>.child);
+		<N5>.child = <N51>.child;
+	}
+
+<N5>-> ~
+	{
+		<N5>.child = <N5>.inh;
+	}
+
+<factor>-> BO <arithmeticOrBooleanExpr> BC
+	{
+		<factor>.child = <arithmeticOrBooleanExpr>.child;
+	}
+
+<factor>-> <var_id_num>
+	{
+		<factor>.child = <var_id_num>.child;
+	}
+
+<op1>-> PLUS
+	{
+		<op1>.child = PLUS;
+	}
+
+<op1>-> MINUS
+	{
+		<op1>.child = MINUS;
+	}
+
+<op2>-> MUL
+	{
+		<op2>.child = MUL;
+	}
+
+<op2>-> DIV
+	{
+		<op2>.child = DIV;
+	}
+
+<logicalOp>-> AND
+	{
+		<logicalOp>.child = AND;
+	}
+
+<logicalOp>-> OR
+	{
+		<logicalOp>.child = OR;
+	}
+
+<relationalOp>-> LT
+	{
+		<relationalOp>.child = LT;
+	}
+
+<relationalOp>-> LE
+	{
+		<relationalOp>.child = LE;
+	}
+
+<relationalOp>-> GT
+	{
+		<relationalOp>.child = GT;
+	}
+
+<relationalOp>-> GE
+	{
+		<relationalOp>.child = GE;
+	}
+
+<relationalOp>-> EQ 
+	{
+		<relationalOp>.child = EQ;
+	}
+
+<relationalOp>-> NE
+	{
+		<relationalOp>.child = NE;
+	}
+
+<declareStmt>-> DECLARE <idList> COLON <dataType> SEMICOL
+	{
+		<declareStmt>.child = <idList>;
+		<declareStmt>.child.add(<dataType>.child);
+		//<idList> is retained and not <idList>.child to keep uniformity in the way identifier lists are stored in the AST.
+	}
+
+<conditionalStmt>-> SWITCH BO ID BC START <caseStmts> <default> END
+	{
+		<conditionalStmt>.child = ID;
+		<conditionalStmt>.child.add(<caseStmts>.child);
+		<conditionalStmt>.child.add(<default>);
+	}
+
+<caseStmts>-> CASE <value> COLON <statements> BREAK SEMICOL <N9>
+	{
+		<caseStmts>.child = <value>.child;
+		<caseStmts>.child.add(<statements>);
+		<caseStmts>.child.add(<N9>.child);
+	}
+
+<N9>-> CASE <value> COLON <statements> BREAK SEMICOL <N9>
+	{
+		<N9>.child = <value>.child;
+		<N9>.child.add(<statements>);
+		<N9>.child.add(<N91>.child);
+	}
+
+<N9>-> ~
+	{
+		<N9>.child = NULL;
+	}
+
+<value>-> NUM
+	{
+		<value>.child = NUM;
+	}
+
+<value>-> TRUE
+	{
+		<value>.child = TRUE;
+	}
+
+<value>-> FALSE
+	{
+		<value>.child = FALSE;
+	}
+
+<default>-> DEFAULT COLON <statements> BREAK SEMICOL
+	{
+		<default>.child = <statements>.child;
+		//<default> is the only other node in the AST other than the <statements> node under which statements can be present.
+	}
+
+<default>-> ~
+	{
+		<default>.child = NULL;
+	}
+
+<iterativeStmt>-> FOR BO ID IN <range> BC START <statements> END
+	{
+		<iterativeStmt>.child = FOR;
+		<iterativeStmt>.child.child = ID;
+		<iterativeStmt>.child.child.add(<range>.child);
+		<iterativeStmt>.child.child.add(<statements>);
+	}
+
+<iterativeStmt>-> WHILE BO <arithmeticOrBooleanExpr> BC START <statements> END
+	{
+		<iterativeStmt>.child = WHILE;
+		<iterativeStmt>.child.child = <arithmeticOrBooleanExpr>.child;
+		<iterativeStmt>.child.child.add(<statements>);
+	}
+
+<range>-> NUM RANGEOP NUM
+	{
+		<range>.child = NUM;
+		<range>.child.add(NUM1);
+	}
